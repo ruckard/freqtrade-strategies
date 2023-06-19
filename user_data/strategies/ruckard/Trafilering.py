@@ -5,6 +5,7 @@
 import numpy as np  # noqa
 import pandas as pd  # noqa
 from pandas import DataFrame
+from datetime import datetime
 
 from freqtrade.strategy import (
     BooleanParameter,
@@ -160,3 +161,19 @@ class Trafilering(IStrategy):
         ] = 1
 
         return dataframe
+
+    def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float, proposed_stake: float, min_stake: float, max_stake: float, leverage: float, entry_tag: str, side: str, **kwargs) -> float:
+        risk_per_trade = 0.01
+        # TODO: Set this 1% risk per trade as a config option
+
+        max_money_loss_per_trade = self.wallets.get_total_stake_amount() * risk_per_trade
+
+        stop_price = current_rate * ( 1 - -self.stoploss ) # loss whatever% of price
+        volume_for_buy = max_money_loss_per_trade / (current_rate - stop_price)
+        use_money = volume_for_buy * current_rate
+
+        print("use_money", use_money)
+        print("max_money_loss_per_trade", max_money_loss_per_trade)
+        print("current_rate", current_rate)
+
+        return use_money
