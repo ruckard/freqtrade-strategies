@@ -21,7 +21,7 @@ import freqtrade.vendor.qtpylib.indicators as qtpylib
 
 
 # This class is a sample. Feel free to customize it.
-class FSampleStrategy(IStrategy):
+class Trafilering(IStrategy):
 
     INTERFACE_VERSION = 3
     timeframe = "1h"
