@@ -172,8 +172,9 @@ class Trafilering(IStrategy):
         volume_for_buy = max_money_loss_per_trade / (current_rate - stop_price)
         use_money = volume_for_buy * current_rate
 
-        print("use_money", use_money)
-        print("max_money_loss_per_trade", max_money_loss_per_trade)
-        print("current_rate", current_rate)
+        #print("total_stake_amount", self.wallets.get_total_stake_amount())
+        #print("use_money", use_money)
+        #print("max_money_loss_per_trade", max_money_loss_per_trade)
+        #print("current_rate", current_rate)
 
         return use_money
