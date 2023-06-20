@@ -13,6 +13,11 @@ from freqtrade.strategy import (
     DecimalParameter,
     IStrategy,
     IntParameter,
+    stoploss_from_absolute,
+)
+
+from freqtrade.exchange import (
+    timeframe_to_prev_date
 )
 
 # --------------------------------
@@ -47,6 +52,8 @@ class Trafilering(IStrategy):
     startup_candle_count: int = 30
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+
+        dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
 
         dataframe["adx"] = ta.ADX(dataframe)
         # RSI
@@ -162,19 +169,56 @@ class Trafilering(IStrategy):
 
         return dataframe
 
+    use_custom_stoploss = True
+
+    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+                        current_rate: float, current_profit: float, **kwargs) -> float:
+        if (trade.open_date_utc is not None):
+            trade_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
+
+            # Obtain pair dataframe.
+            dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+
+            # Look up trade candle.
+            trade_candle = dataframe.loc[dataframe['date'] == trade_date]
+            pre_trade_candle = dataframe.shift()
+            pre_trade_candle = pre_trade_candle.tail(1).squeeze()
+
+            if ('atr' in pre_trade_candle):
+                if (trade.is_short):
+                    pre_trade_candle_stoploss = stoploss_from_absolute(current_rate + (pre_trade_candle['atr'] * 1.5), current_rate, is_short=trade.is_short)
+                else:
+                    pre_trade_candle_stoploss = stoploss_from_absolute(current_rate - (pre_trade_candle['atr'] * 1.5), current_rate, is_short=trade.is_short)
+                return pre_trade_candle_stoploss
+        return 1.00
+
     def custom_stake_amount(self, pair: str, current_time: datetime, current_rate: float, proposed_stake: float, min_stake: float, max_stake: float, leverage: float, entry_tag: str, side: str, **kwargs) -> float:
         risk_per_trade = 0.01
         # TODO: Set this 1% risk per trade as a config option
 
         max_money_loss_per_trade = self.wallets.get_total_stake_amount() * risk_per_trade
 
-        stop_price = current_rate * ( 1 - -self.stoploss ) # loss whatever% of price
-        volume_for_buy = max_money_loss_per_trade / (current_rate - stop_price)
-        use_money = volume_for_buy * current_rate
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        pre_trade_candle = dataframe.shift().tail(1).squeeze()
+        if ('atr' in pre_trade_candle):
+            # TODO: 1.5 needs to be a setting
+            atr_stoploss_value = pre_trade_candle['atr'] * 1.5
+            atr_stoploss_perone = (atr_stoploss_value / self.wallets.get_total_stake_amount())
+            atr_stoploss_percentage = atr_stoploss_perone * 100.0
 
-        #print("total_stake_amount", self.wallets.get_total_stake_amount())
-        #print("use_money", use_money)
-        #print("max_money_loss_per_trade", max_money_loss_per_trade)
-        #print("current_rate", current_rate)
+            if (side == 'long'):
+                stop_price = current_rate * ( 1 - atr_stoploss_perone ) # loss whatever% of price
+                volume_for_buy = max_money_loss_per_trade / (current_rate - stop_price)
+                use_money = volume_for_buy * current_rate
+            else:
+                stop_price = current_rate * ( 1 + atr_stoploss_perone ) # loss whatever% of price
+                volume_for_buy = max_money_loss_per_trade / (stop_price - current_rate)
+                use_money = volume_for_buy * current_rate
+            # TODO What happens when volume is greater than available amount
+
+            #print ("atr_stoploss_percentage: " + str(atr_stoploss_percentage))
+            #print ("stop_price: " + str(stop_price))
+            #print ("volume_for_buy: " + str(volume_for_buy))
+            #print ("use_money: " + str(use_money))
 
         return use_money
