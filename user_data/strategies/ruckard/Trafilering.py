@@ -51,7 +51,169 @@ class Trafilering(IStrategy):
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 30
 
+    # This function should return traileringLong so that we can later on decide to end into a trend or not
+    def populate_trailering_long(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+
+        df = dataframe.copy()
+
+        i_trailering_atr_take_profit_length = 14 # TODO: Input
+        i_virt_trailering_offset = 0 # TODO: Input
+        i_virt_trailering_period = 24 # TODO: Input
+        i_traileringAtrTakeProfitMultiplier = 1.25 # TODO: Input
+        i_virtTakeProfitMaximumProfitExcursionRatio = 1.00 # TODO: Input
+        i_breakEven = 0.20 # TODO: Input
+        i_breakEvenPerOne = i_breakEven * 0.01
+
+        for i in range(i_trailering_atr_take_profit_length, len(df)):
+            # Only once init
+            if (i == i_trailering_atr_take_profit_length):
+                virtLongMaximumProfitPrice = None
+                virtLongMaximumLossPrice = None
+                virtShortMaximumProfitPrice = None
+                virtShortMaximumLossPrice = None
+                traileringAtrLongTakeProfitPrice = None
+                traileringAtrShortTakeProfitPrice = None
+                traileringLongTakeProfitPerOne = None
+                traileringShortTakeProfitPerOne = None
+                virtLongTakeProfit = None
+                virtShortTakeProfit = None
+                virtExpectedTakeProfit = None
+                resetVirtVariables = False
+
+                virtInsideAPosition = False
+                virtPositionPrice = df["close"].iat[i]
+
+            # Init on each loop
+            virtLongMaximumProfitExcursion = 0.0
+            virtShortMaximumProfitExcursion = 0.0
+            virtShortMaximumLossExcursion = 0.0
+            i_traileringAtrTakeProfitSource = df["close"].iat[i] # TODO: Input
+
+            virt_trailering_both = ((i + i_virt_trailering_offset) % i_virt_trailering_period) == 0
+
+            if (virtLongTakeProfit is not None):
+                virtLongTakeProfitIsReached = (virtLongTakeProfit >= df["low"].iat[i]) and (virtLongTakeProfit <= df["high"].iat[i])
+            else:
+                virtLongTakeProfitIsReached = False
+            if (virtShortTakeProfit is not None):
+                virtShortTakeProfitIsReached =  (virtShortTakeProfit >= df["low"].iat[i]) and (virtShortTakeProfit <= df["high"].iat[i])
+            else:
+                virtShortTakeProfitIsReached = False
+
+            if (not (df["virtLongTakeProfitIsReached"].iat[i - 1] or df["virtShortTakeProfitIsReached"].iat[i - 1])):
+                if ((not insideASellOrder) and (not insideABuyOrder)):
+                    if ((not df["virtTraileringBoth"].iat[i - 1]) and (virtTraileringBoth)):
+                        if (virtInsideAPosition):
+                            resetVirtVariables = True
+                        virtInsideAPosition = True
+                        virtPositionPrice = df["close"].iat[i]
+
+            if (df["virtInsideAPosition"].iat[i - 1] and (virtLongTakeProfitIsReached or virtShortTakeProfitIsReached)):
+                virtInsideAPosition = False
+
+            tmpTraileringAtrLongTakeProfitPrice = i_traileringAtrTakeProfitSource + (df["traileringAtr"].iat[i] * i_traileringAtrTakeProfitMultiplier)
+            tmpTraileringAtrShortTakeProfitPrice = i_traileringAtrTakeProfitSource - (df["traileringAtr"].iat[i] * i_traileringAtrTakeProfitMultiplier)
+
+            if ((not virtInsideAPosition) or ((not df["virtInsideAPosition"].iat[i - 1]) and virtInsideAPosition) or (resetVirtVariables)):
+                traileringAtrLongTakeProfitPrice = tmpTraileringAtrLongTakeProfitPrice
+                traileringAtrShortTakeProfitPrice = tmpTraileringAtrShortTakeProfitPrice
+                virtLongTakeProfit = traileringAtrLongTakeProfitPrice
+                virtShortTakeProfit = traileringAtrShortTakeProfitPrice
+
+            # maximumProfitExcursion - BEGIN
+
+            # Long
+            if ((not df["virtInsideAPosition"].iat[i - 1]) and virtInsideAPosition):
+                if (df["close"].iat[i] >= virtPositionPrice):
+                    virtLongMaximumProfitPrice = df["close"].iat[i]
+                else:
+                    virtLongMaximumProfitPrice = virtPositionPrice
+            elif (virtInsideAPosition):
+                if (df["close"].iat[i] >= df["virtLongMaximumProfitPrice"].iat[i - 1]):
+                    virtLongMaximumProfitPrice = df["close"].iat[i]
+            virtLongMaximumProfitExcursion = math.abs(virtLongMaximumProfitPrice - virtPositionPrice)
+
+            # Short
+            if ((not df["virtInsideAPosition"].iat[i - 1]) and virtInsideAPosition):
+                if (df["close"].iat[i] <= virtPositionPrice):
+                    virtShortMaximumProfitPrice = df["close"].iat[i]
+                else:
+                    virtShortMaximumProfitPrice = virtPositionPrice
+            elif (virtInsideAPosition):
+                if (df["close"].iat[i] <= df["virtShortMaximumProfitPrice"].iat[i - 1]):
+                    virtShortMaximumProfitPrice = df["close"].iat[i]
+            virtShortMaximumProfitExcursion = math.abs(virtShortMaximumProfitPrice - virtPositionPrice)
+
+            # maximumProfitExcursion - END
+
+            # maximumLossExcursion - BEGIN
+
+            # Long
+            if (resetVirtVariables or ((not df["virtInsideAPosition"].iat[i - 1]) and virtInsideAPosition)):
+                if (df["close"].iat[i] <= virtPositionPrice):
+                    virtLongMaximumLossPrice = df["close"].iat[i]
+                else:
+                    virtLongMaximumLossPrice = virtPositionPrice
+            elif (virtInsideAPosition):
+                if (df["close"].iat[i] <= df["virtLongMaximumLossPrice"].iat[i - 1]):
+                    virtLongMaximumLossPrice = df["close"].iat[i]
+            virtLongMaximumLossExcursion = math.abs(virtLongMaximumLossPrice - virtPositionPrice)
+
+            # Short
+            if (resetVirtVariables or ((not df["virtInsideAPosition"].iat[i - 1]) and virtInsideAPosition)):
+                if (df["close"].iat[i] >= virtPositionPrice):
+                    virtShortMaximumLossPrice = df["close"].iat[i]
+                else:
+                    virtShortMaximumLossPrice = virtPositionPrice
+            elif (virtInsideAPosition):
+                if (df["close"].iat[i] >= df["virtShortMaximumLossPrice"].iat[i - 1]):
+                    virtShortMaximumLossPrice = df["close"].iat[i]
+            virtShortMaximumLossExcursion = math.abs(virtShortMaximumLossPrice - virtPositionPrice)
+
+            if (resetVirtVariables):
+                resetVirtVariables = False
+
+            # maximumLossExcursion - END
+
+            if (virtInsideAPosition):
+                # Long
+                virtExpectedTakeProfit = traileringAtrLongTakeProfitPrice + ((i_virtTakeProfitMaximumProfitExcursionRatio * virtLongMaximumProfitExcursion) - (i_virtTakeProfitMaximumLossExcursionRatio * virtLongMaximumLossExcursion))
+                if (virtExpectedTakeProfit >= (virtPositionPrice * (1 + i_breakEvenPerOne))):
+                    virtLongTakeProfit = virtExpectedTakeProfit
+                else:
+                    virtLongTakeProfit = df["virtLongTakeProfit"].iat[i - 1]
+                # Short
+                virtExpectedTakeProfit = traileringAtrShortTakeProfitPrice - ((i_virtTakeProfitMaximumProfitExcursionRatio * virtShortMaximumProfitExcursion) - (i_virtTakeProfitMaximumLossExcursionRatio * virtShortMaximumLossExcursion))
+                if (virtExpectedTakeProfit <= (virtPositionPrice * (1 - i_breakEvenPerOne))):
+                    virtShortTakeProfit = virtExpectedTakeProfit
+                else:
+                    virtShortTakeProfit = df["virtShortTakeProfit"].iat[i - 1]
+
+            df["traileringLong"].iat[i] = df["virtInsideAPosition"].iat[i - 1] and virtShortTakeProfitIsReached and (df["close"].iat[i] <= virtPositionPrice) and (virtPositionPrice >= (df["close"].iat[i] * (1 + i_breakEvenPerOne)))
+            df["traileringShort"].iat[i] = df["virtInsideAPosition"].iat[i - 1] and virtLongTakeProfitIsReached and (df["close"].iat[i] >= virtPositionPrice) and (virtPositionPrice <= (df["close"].iat[i] * (1 - i_breakEvenPerOne)))
+
+            # Save tmp variables into df
+            df["virtLongTakeProfitIsReached"].iat[i] = virtLongTakeProfitIsReached
+            df["virtShortTakeProfitIsReached"].iat[i] = virtShortTakeProfitIsReached
+            df["virtTraileringBoth"].iat[i] = virtTraileringBoth
+            df["virtInsideAPosition"].iat[i] = virtInsideAPosition
+            df["virtLongMaximumProfitPrice"].iat[i] = virtLongMaximumProfitPrice
+            df["virtShortMaximumProfitPrice"].iat[i] = virtShortMaximumProfitPrice
+            df["virtLongMaximumLossPrice"].iat[i] = virtLongMaximumLossPrice
+            df["virtShortMaximumLossPrice"].iat[i] = virtShortMaximumLossPrice
+            df["virtLongTakeProfit"].iat[i] = virtLongTakeProfit
+            df["virtShortTakeProfit"].iat[i] = virtShortTakeProfit
+
+        return (df["traileringLong"])
+
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+
+        print("DataframeSize: " + str(dataframe.size))
+
+        i_traileringAtrTakeProfitLength = 14 # TODO: Input
+        dataframe['traileringAtr'] = ta.ATR(dataframe, timeperiod=i_traileringAtrTakeProfitLength)
+
+        #dataframe["traileringlong"] = self.populate_trailering_long(dataframe, metadata)
 
         dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
 
