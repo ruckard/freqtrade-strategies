@@ -213,7 +213,7 @@ class Trafilering(IStrategy):
         i_traileringAtrTakeProfitLength = 14 # TODO: Input
         dataframe['traileringAtr'] = ta.ATR(dataframe, timeperiod=i_traileringAtrTakeProfitLength)
 
-        #dataframe["traileringlong"] = self.populate_trailering_long(dataframe, metadata)
+        dataframe["traileringLong"] = self.populate_trailering_long(dataframe, metadata)
 
         dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
 
