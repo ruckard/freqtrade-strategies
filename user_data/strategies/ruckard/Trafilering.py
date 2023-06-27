@@ -61,8 +61,23 @@ class Trafilering(IStrategy):
         i_virt_trailering_period = 24 # TODO: Input
         i_traileringAtrTakeProfitMultiplier = 1.25 # TODO: Input
         i_virtTakeProfitMaximumProfitExcursionRatio = 1.00 # TODO: Input
+        i_virtTakeProfitMaximumLossExcursionRatio = 1.00 # TODO: Input
         i_breakEven = 0.20 # TODO: Input
         i_breakEvenPerOne = i_breakEven * 0.01
+
+        # Add new columns
+        df["virtLongTakeProfitIsReached"] = None
+        df["virtShortTakeProfitIsReached"] = None
+        df["virtTraileringBoth"] = None
+        df["virtInsideAPosition"] = None
+        df["virtLongMaximumProfitPrice"] = None
+        df["virtShortMaximumProfitPrice"] = None
+        df["virtLongMaximumLossPrice"] = None
+        df["virtShortMaximumLossPrice"] = None
+        df["virtLongTakeProfit"] = None
+        df["virtShortTakeProfit"] = None
+        df["traileringLong"] = None
+        df["traileringShort"] = None
 
         for i in range(i_trailering_atr_take_profit_length, len(df)):
             # Only once init
@@ -89,7 +104,7 @@ class Trafilering(IStrategy):
             virtShortMaximumLossExcursion = 0.0
             i_traileringAtrTakeProfitSource = df["close"].iat[i] # TODO: Input
 
-            virt_trailering_both = ((i + i_virt_trailering_offset) % i_virt_trailering_period) == 0
+            virtTraileringBoth = ((i + i_virt_trailering_offset) % i_virt_trailering_period) == 0
 
             if (virtLongTakeProfit is not None):
                 virtLongTakeProfitIsReached = (virtLongTakeProfit >= df["low"].iat[i]) and (virtLongTakeProfit <= df["high"].iat[i])
@@ -101,7 +116,8 @@ class Trafilering(IStrategy):
                 virtShortTakeProfitIsReached = False
 
             if (not (df["virtLongTakeProfitIsReached"].iat[i - 1] or df["virtShortTakeProfitIsReached"].iat[i - 1])):
-                if ((not insideASellOrder) and (not insideABuyOrder)):
+                if (True):
+                #if ((not insideASellOrder) and (not insideABuyOrder)):
                     if ((not df["virtTraileringBoth"].iat[i - 1]) and (virtTraileringBoth)):
                         if (virtInsideAPosition):
                             resetVirtVariables = True
@@ -131,7 +147,10 @@ class Trafilering(IStrategy):
             elif (virtInsideAPosition):
                 if (df["close"].iat[i] >= df["virtLongMaximumProfitPrice"].iat[i - 1]):
                     virtLongMaximumProfitPrice = df["close"].iat[i]
-            virtLongMaximumProfitExcursion = math.abs(virtLongMaximumProfitPrice - virtPositionPrice)
+            if (virtLongMaximumProfitPrice is not None):
+                virtLongMaximumProfitExcursion = abs(virtLongMaximumProfitPrice - virtPositionPrice)
+            else:
+                virtLongMaximumProfitExcursion = 0.0
 
             # Short
             if ((not df["virtInsideAPosition"].iat[i - 1]) and virtInsideAPosition):
@@ -142,7 +161,10 @@ class Trafilering(IStrategy):
             elif (virtInsideAPosition):
                 if (df["close"].iat[i] <= df["virtShortMaximumProfitPrice"].iat[i - 1]):
                     virtShortMaximumProfitPrice = df["close"].iat[i]
-            virtShortMaximumProfitExcursion = math.abs(virtShortMaximumProfitPrice - virtPositionPrice)
+            if (virtShortMaximumProfitPrice is not None):
+                virtShortMaximumProfitExcursion = abs(virtShortMaximumProfitPrice - virtPositionPrice)
+            else:
+                virtShortMaximumProfitExcursion = 0.0
 
             # maximumProfitExcursion - END
 
@@ -157,7 +179,10 @@ class Trafilering(IStrategy):
             elif (virtInsideAPosition):
                 if (df["close"].iat[i] <= df["virtLongMaximumLossPrice"].iat[i - 1]):
                     virtLongMaximumLossPrice = df["close"].iat[i]
-            virtLongMaximumLossExcursion = math.abs(virtLongMaximumLossPrice - virtPositionPrice)
+            if (virtLongMaximumLossPrice is not None):
+                virtLongMaximumLossExcursion = abs(virtLongMaximumLossPrice - virtPositionPrice)
+            else:
+                virtLongMaximumLossExcursion = 0.0
 
             # Short
             if (resetVirtVariables or ((not df["virtInsideAPosition"].iat[i - 1]) and virtInsideAPosition)):
@@ -168,7 +193,10 @@ class Trafilering(IStrategy):
             elif (virtInsideAPosition):
                 if (df["close"].iat[i] >= df["virtShortMaximumLossPrice"].iat[i - 1]):
                     virtShortMaximumLossPrice = df["close"].iat[i]
-            virtShortMaximumLossExcursion = math.abs(virtShortMaximumLossPrice - virtPositionPrice)
+            if (virtShortMaximumLossPrice is not None):
+                virtShortMaximumLossExcursion = abs(virtShortMaximumLossPrice - virtPositionPrice)
+            else:
+                virtShortMaximumLossExcursion = 0.0
 
             if (resetVirtVariables):
                 resetVirtVariables = False
