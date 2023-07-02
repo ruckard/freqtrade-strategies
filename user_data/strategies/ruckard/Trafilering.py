@@ -56,6 +56,9 @@ class Trafilering(IStrategy):
     # ATR Length for the Trailering ATR
     i_traileringAtrTakeProfitLength = 14 # TODO: Probably an INPUT from the config
 
+    # Custom dictionary for saving custom TakeProfitPrice and other data
+    custom_info = {}
+
     # This function should return traileringLong so that we can later on decide to end into a trend or not
     def populate_trailering_long(self, dataframe: DataFrame, metadata: dict, offset: int, traileringAtrTakeProfitLength : int) -> DataFrame:
 
@@ -329,13 +332,84 @@ class Trafilering(IStrategy):
 
         return dataframe
 
+    def confirm_trade_entry(self, pair: str, order_type: str, amount: float, rate: float,
+                            time_in_force: str, current_time: datetime, entry_tag: str,
+                            side: str, **kwargs) -> bool:
+
+        i_breakEven = 0.20 # TODO: Input
+        i_breakEvenPerOne = i_breakEven * 0.01
+        i_longTakeProfitRatio = 0.68
+        i_shortTakeProfitRatio = 0.68
+
+        dataframe, _ = self.dp.get_analyzed_dataframe(pair, self.timeframe)
+        last_candle = dataframe.shift()
+        last_candle = last_candle.tail(1).squeeze()
+
+        # 1. Check if it is worth trading the trade
+        if (side == 'long'):
+            longTakeProfit = last_candle['low'] + (i_longTakeProfitRatio * (last_candle['high'] - last_candle['low']))
+            if ((longTakeProfit) >= ((last_candle['close']) * (1 + i_breakEvenPerOne))):
+                pass
+            else:
+                return (False)
+
+        if (side == 'short'):
+            shortTakeProfit = last_candle['high'] - (i_longTakeProfitRatio * (last_candle['high'] - last_candle['low']))
+            if ((shortTakeProfit) <= ((last_candle['close']) * (1 - i_breakEvenPerOne))):
+                pass
+            else:
+                return (False)
+
+        if (side == 'long'):
+            newTakeProfit = longTakeProfit
+        if (side == 'short'):
+            newTakeProfit = shortTakeProfit
+
+        # 2. Update custom values
+        if not pair in self.custom_info:
+            self.custom_info[pair] = {
+                'takeProfitPrice' : float(newTakeProfit)
+            }
+        else:
+            self.custom_info[pair]['takeProfitPrice'] = float(newTakeProfit)
+
+        return (True)
+
+    def confirm_trade_exit(self, pair: str, trade: Trade, order_type: str, amount: float,
+                           rate: float, time_in_force: str, exit_reason: str,
+                           current_time: datetime, **kwargs) -> bool:
+
+        if (trade.is_short):
+            exitTakeProfit = 0.0
+        else:
+            exitTakeProfit = 99999999.0
+
+        if not pair in self.custom_info:
+            self.custom_info[pair] = {
+                'takeProfitPrice' : float(exitTakeProfit)
+            }
+        else:
+            self.custom_info[pair]['takeProfitPrice'] = float(exitTakeProfit)
+
+        return True
+
     use_exit_signal = True
 
     def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
                     current_profit: float, **kwargs):
         i_trade_maximum_duration_hours = 4 # TODO: Input
         expiredTrade = ((current_time - trade.open_date_utc) >= timedelta(hours=i_trade_maximum_duration_hours))
-        return (expiredTrade)
+        if (expiredTrade):
+            return ('expired_trade')
+
+        if pair in self.custom_info:
+            if ((trade.is_short) and (current_rate <= self.custom_info[pair]['takeProfitPrice'])):
+                return ('short_take_profit_reached')
+
+            if ((not (trade.is_short)) and (current_rate >= self.custom_info[pair]['takeProfitPrice'])):
+                return ('long_take_profit_reached')
+
+        return (False)
 
     use_custom_stoploss = True
 
