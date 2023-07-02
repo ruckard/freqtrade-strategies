@@ -51,6 +51,9 @@ class Trafilering(IStrategy):
     # Number of candles the strategy requires before producing valid signals
     startup_candle_count: int = 30
 
+    # ATR Length for the Trailering ATR
+    i_traileringAtrTakeProfitLength = 14 # TODO: Probably an INPUT from the config
+
     # This function should return traileringLong so that we can later on decide to end into a trend or not
     def populate_trailering_long(self, dataframe: DataFrame, metadata: dict, offset: int, traileringAtrTakeProfitLength : int) -> DataFrame:
 
@@ -238,11 +241,10 @@ class Trafilering(IStrategy):
 
         print("DataframeSize: " + str(dataframe.size))
 
-        i_traileringAtrTakeProfitLength = 14 # TODO: Input
-        dataframe['traileringAtr'] = ta.ATR(dataframe, timeperiod=i_traileringAtrTakeProfitLength)
+        dataframe['traileringAtr'] = ta.ATR(dataframe, timeperiod=self.i_traileringAtrTakeProfitLength)
 
         for traileringOffset in range(0,24):
-            dataframe["traileringLong" + "-" + str(traileringOffset)], dataframe["traileringShort" + "-" + str(traileringOffset)] = self.populate_trailering_long(dataframe, metadata, offset=traileringOffset, traileringAtrTakeProfitLength=i_traileringAtrTakeProfitLength)
+            dataframe["traileringLong" + "-" + str(traileringOffset)], dataframe["traileringShort" + "-" + str(traileringOffset)] = self.populate_trailering_long(dataframe, metadata, offset=traileringOffset, traileringAtrTakeProfitLength=self.i_traileringAtrTakeProfitLength)
 
         dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
 
