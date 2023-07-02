@@ -307,7 +307,7 @@ class Trafilering(IStrategy):
             for traileringOffset in range(0,24):
                 if (dataframe["traileringLong" + "-" + str(traileringOffset)].iat[i]):
                     trafilering_longs += 1
-            if ((trafilering_longs >= i_virt_trafilering_minimum_longs) and (trafilering_longs >= i_virt_trafilering_maximum_longs)):
+            if ((trafilering_longs >= i_virt_trafilering_minimum_longs) and (trafilering_longs <= i_virt_trafilering_maximum_longs)):
                 dataframe["enter_long"].iat[i] = 1
 
         i_virt_trafilering_minimum_shorts = 5 # TODO: Input
@@ -318,7 +318,7 @@ class Trafilering(IStrategy):
             for traileringOffset in range(0,24):
                 if (dataframe["traileringShort" + "-" + str(traileringOffset)].iat[i]):
                     trafilering_shorts += 1
-            if ((trafilering_shorts >= i_virt_trafilering_minimum_shorts) and (trafilering_shorts >= i_virt_trafilering_maximum_shorts)):
+            if ((trafilering_shorts >= i_virt_trafilering_minimum_shorts) and (trafilering_shorts <= i_virt_trafilering_maximum_shorts)):
                 dataframe["enter_short"].iat[i] = 1
 
         return dataframe
