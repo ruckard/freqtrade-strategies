@@ -297,10 +297,8 @@ class Trafilering(IStrategy):
         dataframe.loc[
             (
                 # Signal: RSI crosses above 30
-                (qtpylib.crossed_above(dataframe["rsi"], 30))
-                & (dataframe["tema"] <= dataframe["bb_middleband"])
-                & (  # Guard: tema below BB middle
-                    dataframe["tema"] > dataframe["tema"].shift(1)
+                (
+                    dataframe["traileringLong"]
                 )
                 & (  # Guard: tema is raising
                     dataframe["volume"] > 0
