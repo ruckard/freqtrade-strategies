@@ -297,18 +297,16 @@ class Trafilering(IStrategy):
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
-        dataframe.loc[
-            (
-                # Signal: RSI crosses above 30
-                (
-                    dataframe["traileringLong"]
-                )
-                & (  # Guard: tema is raising
-                    dataframe["volume"] > 0
-                )  # Make sure Volume is not 0
-            ),
-            "enter_long",
-        ] = 1
+        i_virt_trafilering_minimum_longs = 5 # TODO: Input
+        i_virt_trafilering_maximum_longs = 10 # TODO: Input
+        dataframe["enter_long"] = None
+        for i in range(self.i_traileringAtrTakeProfitLength, len(dataframe)):
+            trafilering_longs = 0
+            for traileringOffset in range(0,24):
+                if (dataframe["traileringLong" + "-" + str(traileringOffset)].iat[i]):
+                    trafilering_longs += 1
+            if ((trafilering_longs >= i_virt_trafilering_minimum_longs) and (trafilering_longs >= i_virt_trafilering_maximum_longs)):
+                dataframe["enter_long"].iat[i] = 1
 
         dataframe.loc[
             (
