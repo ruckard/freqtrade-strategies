@@ -38,7 +38,7 @@ class Trafilering(IStrategy):
     # minimal_roi = {"60": 0.1, "30": 0.2, "0": 0.2}
     minimal_roi = {"0": 1}
 
-    stoploss = -0.05
+    stoploss = -1.00
     can_short = True
 
     # Trailing stoploss
