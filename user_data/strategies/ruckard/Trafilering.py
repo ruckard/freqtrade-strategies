@@ -339,7 +339,7 @@ class Trafilering(IStrategy):
 
     use_custom_stoploss = True
 
-    def custom_stoploss(self, pair: str, trade: 'Trade', current_time: datetime,
+    def custom_stoploss(self, pair: str, trade: Trade, current_time: datetime,
                         current_rate: float, current_profit: float, **kwargs) -> float:
         if (trade.open_date_utc is not None):
             trade_date = timeframe_to_prev_date(self.timeframe, trade.open_date_utc)
