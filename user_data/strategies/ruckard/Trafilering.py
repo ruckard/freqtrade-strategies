@@ -52,12 +52,12 @@ class Trafilering(IStrategy):
     startup_candle_count: int = 30
 
     # This function should return traileringLong so that we can later on decide to end into a trend or not
-    def populate_trailering_long(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
+    def populate_trailering_long(self, dataframe: DataFrame, metadata: dict, offset: int) -> DataFrame:
 
         df = dataframe.copy()
 
         i_trailering_atr_take_profit_length = 14 # TODO: Input
-        i_virt_trailering_offset = 0 # TODO: Input
+        i_virt_trailering_offset = offset
         i_virt_trailering_period = 24 # TODO: Input
         i_traileringAtrTakeProfitMultiplier = 1.25 # TODO: Input
         i_virtTakeProfitMaximumProfitExcursionRatio = 1.00 # TODO: Input
@@ -241,7 +241,7 @@ class Trafilering(IStrategy):
         i_traileringAtrTakeProfitLength = 14 # TODO: Input
         dataframe['traileringAtr'] = ta.ATR(dataframe, timeperiod=i_traileringAtrTakeProfitLength)
 
-        dataframe["traileringLong"], dataframe["traileringShort"] = self.populate_trailering_long(dataframe, metadata)
+        dataframe["traileringLong"], dataframe["traileringShort"] = self.populate_trailering_long(dataframe, metadata, offset=0)
 
         dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
 
