@@ -347,14 +347,14 @@ class Trafilering(IStrategy):
 
         # 1. Check if it is worth trading the trade
         if (side == 'long'):
-            longTakeProfit = last_candle['low'] + (i_longTakeProfitRatio * (last_candle['high'] - last_candle['low']))
+            longTakeProfit = last_candle['close'] + (i_longTakeProfitRatio * (last_candle['high'] - last_candle['close']))
             if ((longTakeProfit) >= ((last_candle['close']) * (1 + i_breakEvenPerOne))):
                 pass
             else:
                 return (False)
 
         if (side == 'short'):
-            shortTakeProfit = last_candle['high'] - (i_longTakeProfitRatio * (last_candle['high'] - last_candle['low']))
+            shortTakeProfit = last_candle['close'] - (i_longTakeProfitRatio * (last_candle['close'] - last_candle['low']))
             if ((shortTakeProfit) <= ((last_candle['close']) * (1 - i_breakEvenPerOne))):
                 pass
             else:
