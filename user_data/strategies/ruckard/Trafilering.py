@@ -5,7 +5,7 @@
 import numpy as np  # noqa
 import pandas as pd  # noqa
 from pandas import DataFrame
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from freqtrade.strategy import (
     BooleanParameter,
@@ -19,6 +19,8 @@ from freqtrade.strategy import (
 from freqtrade.exchange import (
     timeframe_to_prev_date
 )
+
+from freqtrade.persistence import Trade
 
 # --------------------------------
 # Add your lib to import here
@@ -326,6 +328,14 @@ class Trafilering(IStrategy):
         # Or by the custom_exit function
 
         return dataframe
+
+    use_exit_signal = True
+
+    def custom_exit(self, pair: str, trade: Trade, current_time: datetime, current_rate: float,
+                    current_profit: float, **kwargs):
+        i_trade_maximum_duration_hours = 4 # TODO: Input
+        expiredTrade = ((current_time - trade.open_date_utc) >= timedelta(hours=i_trade_maximum_duration_hours))
+        return (expiredTrade)
 
     use_custom_stoploss = True
 
