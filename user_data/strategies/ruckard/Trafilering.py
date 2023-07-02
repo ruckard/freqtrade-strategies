@@ -232,7 +232,7 @@ class Trafilering(IStrategy):
             df["virtLongTakeProfit"].iat[i] = virtLongTakeProfit
             df["virtShortTakeProfit"].iat[i] = virtShortTakeProfit
 
-        return (df["traileringLong"])
+        return ([ df["traileringLong"], df["traileringShort"] ])
 
     def populate_indicators(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
 
@@ -241,7 +241,7 @@ class Trafilering(IStrategy):
         i_traileringAtrTakeProfitLength = 14 # TODO: Input
         dataframe['traileringAtr'] = ta.ATR(dataframe, timeperiod=i_traileringAtrTakeProfitLength)
 
-        dataframe["traileringLong"] = self.populate_trailering_long(dataframe, metadata)
+        dataframe["traileringLong"], dataframe["traileringShort"] = self.populate_trailering_long(dataframe, metadata)
 
         dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
 
