@@ -104,7 +104,7 @@ class Trafilering(IStrategy):
             virtShortMaximumLossExcursion = 0.0
             i_traileringAtrTakeProfitSource = df["close"].iat[i] # TODO: Input
 
-            virtTraileringBoth = ((i + i_virt_trailering_offset) % i_virt_trailering_period) == 0
+            virtTraileringBoth = ((df["date"].dt.hour.iat[i] + i_virt_trailering_offset) % i_virt_trailering_period) == 0
 
             if (virtLongTakeProfit is not None):
                 virtLongTakeProfitIsReached = (virtLongTakeProfit >= df["low"].iat[i]) and (virtLongTakeProfit <= df["high"].iat[i])
