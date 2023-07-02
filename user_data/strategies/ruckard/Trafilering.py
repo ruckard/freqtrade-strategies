@@ -308,20 +308,16 @@ class Trafilering(IStrategy):
             if ((trafilering_longs >= i_virt_trafilering_minimum_longs) and (trafilering_longs >= i_virt_trafilering_maximum_longs)):
                 dataframe["enter_long"].iat[i] = 1
 
-        dataframe.loc[
-            (
-                # Signal: RSI crosses above 70
-                (qtpylib.crossed_above(dataframe["rsi"], 70))
-                & (dataframe["tema"] > dataframe["bb_middleband"])
-                & (  # Guard: tema above BB middle
-                    dataframe["tema"] < dataframe["tema"].shift(1)
-                )
-                & (  # Guard: tema is falling
-                    dataframe["volume"] > 0
-                )  # Make sure Volume is not 0
-            ),
-            "enter_short",
-        ] = 1
+        i_virt_trafilering_minimum_shorts = 5 # TODO: Input
+        i_virt_trafilering_maximum_shorts = 10 # TODO: Input
+        dataframe["enter_short"] = None
+        for i in range(self.i_traileringAtrTakeProfitLength, len(dataframe)):
+            trafilering_shorts = 0
+            for traileringOffset in range(0,24):
+                if (dataframe["traileringShort" + "-" + str(traileringOffset)].iat[i]):
+                    trafilering_shorts += 1
+            if ((trafilering_shorts >= i_virt_trafilering_minimum_shorts) and (trafilering_shorts >= i_virt_trafilering_maximum_shorts)):
+                dataframe["enter_short"].iat[i] = 1
 
         return dataframe
 
