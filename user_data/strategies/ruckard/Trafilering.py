@@ -322,35 +322,8 @@ class Trafilering(IStrategy):
         return dataframe
 
     def populate_exit_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
-        dataframe.loc[
-            (
-                # Signal: RSI crosses above 70
-                (qtpylib.crossed_above(dataframe["rsi"], 70))
-                & (dataframe["tema"] > dataframe["bb_middleband"])
-                & (  # Guard: tema above BB middle
-                    dataframe["tema"] < dataframe["tema"].shift(1)
-                )
-                & (  # Guard: tema is falling
-                    dataframe["volume"] > 0
-                )  # Make sure Volume is not 0
-            ),
-            "exit_long",
-        ] = 1
-
-        dataframe.loc[
-            (
-                # Signal: RSI crosses above 30
-                (qtpylib.crossed_above(dataframe["rsi"], 30))
-                &
-                # Guard: tema below BB middle
-                (dataframe["tema"] <= dataframe["bb_middleband"])
-                & (dataframe["tema"] > dataframe["tema"].shift(1))
-                & (  # Guard: tema is raising
-                    dataframe["volume"] > 0
-                )  # Make sure Volume is not 0
-            ),
-            "exit_short",
-        ] = 1
+        # Exits will be handled either by the custom_stoploss function
+        # Or by the custom_exit function
 
         return dataframe
 
