@@ -78,7 +78,7 @@ class Trafilering(IStrategy):
                 volumeBounceLong = None
                 volumeBounceShort = None
 
-            volumeBounceRatio = df["close"].iat[i] / df["close"].iat[i - 1]
+            volumeBounceRatio = df["volume"].iat[i] / df["volume"].iat[i - 1]
             volumeBounceLong = (volumeBounceRatio >= longVolumeBounceMinimumRatio) and (volumeBounceRatio <= longVolumeBounceMaximumRatio)
             volumeBounceShort = (volumeBounceRatio >= shortVolumeBounceMinimumRatio) and (volumeBounceRatio <= shortVolumeBounceMaximumRatio)
 
