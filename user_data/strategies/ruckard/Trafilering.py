@@ -253,51 +253,6 @@ class Trafilering(IStrategy):
 
         dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
 
-        dataframe["adx"] = ta.ADX(dataframe)
-        # RSI
-        dataframe["rsi"] = ta.RSI(dataframe)
-
-        # Stochastic Fast
-        stoch_fast = ta.STOCHF(dataframe)
-        dataframe["fastd"] = stoch_fast["fastd"]
-        dataframe["fastk"] = stoch_fast["fastk"]
-
-        # MACD
-        macd = ta.MACD(dataframe)
-        dataframe["macd"] = macd["macd"]
-        dataframe["macdsignal"] = macd["macdsignal"]
-        dataframe["macdhist"] = macd["macdhist"]
-
-        # MFI
-        dataframe["mfi"] = ta.MFI(dataframe)
-
-        # Bollinger Bands
-        bollinger = qtpylib.bollinger_bands(
-            qtpylib.typical_price(dataframe), window=20, stds=2
-        )
-        dataframe["bb_lowerband"] = bollinger["lower"]
-        dataframe["bb_middleband"] = bollinger["mid"]
-        dataframe["bb_upperband"] = bollinger["upper"]
-        dataframe["bb_percent"] = (dataframe["close"] - dataframe["bb_lowerband"]) / (
-            dataframe["bb_upperband"] - dataframe["bb_lowerband"]
-        )
-        dataframe["bb_width"] = (
-            dataframe["bb_upperband"] - dataframe["bb_lowerband"]
-        ) / dataframe["bb_middleband"]
-
-        # Parabolic SAR
-        dataframe["sar"] = ta.SAR(dataframe)
-
-        # TEMA - Triple Exponential Moving Average
-        dataframe["tema"] = ta.TEMA(dataframe, timeperiod=9)
-
-        # Cycle Indicator
-        # ------------------------------------
-        # Hilbert Transform Indicator - SineWave
-        hilbert = ta.HT_SINE(dataframe)
-        dataframe["htsine"] = hilbert["sine"]
-        dataframe["htleadsine"] = hilbert["leadsine"]
-
         return dataframe
 
     def populate_entry_trend(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
