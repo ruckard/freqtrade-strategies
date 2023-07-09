@@ -55,9 +55,38 @@ class Trafilering(IStrategy):
 
     # ATR Length for the Trailering ATR
     i_traileringAtrTakeProfitLength = 14 # TODO: Probably an INPUT from the config
+    i_longVolumeBounceMinimumRatio = 2.5 # TODO: Probably an INPUT from the config
+    i_longVolumeBounceMaximumRatio = 7.0 # TODO: Probably an INPUT from the config
+    i_shortVolumeBounceMinimumRatio = 2.5 # TODO: Probably an INPUT from the config
+    i_shortVolumeBounceMaximumRatio = 7.0 # TODO: Probably an INPUT from the config
 
     # Custom dictionary for saving custom TakeProfitPrice and other data
     custom_info = {}
+
+    def populate_volume_bounce(self, dataframe: DataFrame, metadata: dict, longVolumeBounceMinimumRatio : float, longVolumeBounceMaximumRatio : float, shortVolumeBounceMinimumRatio : float, shortVolumeBounceMaximumRatio : float) -> DataFrame:
+
+        df = dataframe.copy()
+
+        # Add new columns
+        df["volumeBounceLong"] = None
+        df["volumeBounceShort"] = None
+
+        for i in range(1, len(df)):
+            # Only once init
+            if (i == 1):
+                volumeBounceRatio = None
+                volumeBounceLong = None
+                volumeBounceShort = None
+
+            volumeBounceRatio = df["close"].iat[i] / df["close"].iat[i - 1]
+            volumeBounceLong = (volumeBounceRatio >= longVolumeBounceMinimumRatio) and (volumeBounceRatio <= longVolumeBounceMaximumRatio)
+            volumeBounceShort = (volumeBounceRatio >= shortVolumeBounceMinimumRatio) and (volumeBounceRatio <= shortVolumeBounceMaximumRatio)
+
+            # Save tmp variables into df
+            df["volumeBounceLong"].iat[i] = volumeBounceLong
+            df["volumeBounceShort"].iat[i] = volumeBounceShort
+
+        return ([ df["volumeBounceLong"], df["volumeBounceShort"] ])
 
     # This function should return traileringLong so that we can later on decide to end into a trend or not
     def populate_trailering_long(self, dataframe: DataFrame, metadata: dict, offset: int, traileringAtrTakeProfitLength : int) -> DataFrame:
@@ -252,6 +281,8 @@ class Trafilering(IStrategy):
             dataframe["traileringLong" + "-" + str(traileringOffset)], dataframe["traileringShort" + "-" + str(traileringOffset)] = self.populate_trailering_long(dataframe, metadata, offset=traileringOffset, traileringAtrTakeProfitLength=self.i_traileringAtrTakeProfitLength)
 
         dataframe['atr'] = ta.ATR(dataframe, timeperiod=14)
+
+        dataframe["volumeBounceLong"], dataframe["volumeBounceShort"] = self.populate_volume_bounce(dataframe, metadata, longVolumeBounceMinimumRatio=self.i_longVolumeBounceMinimumRatio, longVolumeBounceMaximumRatio=self.i_longVolumeBounceMaximumRatio, shortVolumeBounceMinimumRatio=self.i_shortVolumeBounceMinimumRatio, shortVolumeBounceMaximumRatio=self.i_shortVolumeBounceMaximumRatio)
 
         return dataframe
 
